@@ -57,7 +57,7 @@ spec:
 
               echo "Starting Olmo 3 7B Instruct LoRA fine-tuning for ICD coding..."
 
-              python train_olmo3_icd_sft.py \
+              python finetune_olmo3_icd.py \
                 --train_file ./icd_data/mimiciv_icd10/train.parquet \
                 --val_file ./icd_data/mimiciv_icd10/val.parquet \
                 --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r8 \

@@ -53,7 +53,9 @@ def safe_codes(value: Any) -> List[str]:
         value = value.tolist()
 
     if isinstance(value, (list, tuple, set)):
-        return sorted({str(x).strip() for x in value if x is not None and str(x).strip()})
+        return sorted(
+            {str(x).strip() for x in value if x is not None and str(x).strip()}
+        )
 
     s = str(value).strip()
     if not s:
@@ -95,7 +97,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test_file", default="./icd_data/mimiciv_icd10/test.parquet")
     parser.add_argument("--adapter_dir", required=True)
-    parser.add_argument("--output_file", default="./outputs/test_predictions_vllm.jsonl")
+    parser.add_argument(
+        "--output_file", default="./outputs/test_predictions_vllm.jsonl"
+    )
     parser.add_argument("--text_col", default="text")
     parser.add_argument("--label_col", default="diagnosis_codes")
     parser.add_argument("--max_model_len", type=int, default=8192)
@@ -134,7 +138,7 @@ def main():
 
     with open(args.output_file, "w", encoding="utf-8") as f:
         for start in tqdm(range(0, len(df), args.batch_size), desc="Predicting"):
-            batch = df.iloc[start:start + args.batch_size]
+            batch = df.iloc[start : start + args.batch_size]
 
             prompts = [
                 make_prompt(tokenizer, row[args.text_col])
