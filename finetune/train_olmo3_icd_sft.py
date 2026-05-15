@@ -2,8 +2,8 @@
 Fine-tune Olmo-3-7B-Instruct for generative ICD coding.
 
 Expected input files:
-  data/processed/mimiciv_icd10/train.parquet
-  data/processed/mimiciv_icd10/val.parquet
+  ./icd_data/mimiciv_icd10/train.parquet
+  ./icd_data/mimiciv_icd10/val.parquet
 
 Expected row content:
   - one text-like column containing the discharge summary
@@ -157,9 +157,13 @@ def load_and_prepare(path: str, text_col: str | None, label_col: str | None) -> 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train_file", default="data/processed/mimiciv_icd10/train.parquet")
-    parser.add_argument("--val_file", default="data/processed/mimiciv_icd10/val.parquet")
-    parser.add_argument("--output_dir", default="outputs/olmo3-7b-instruct-mimiciv-icd10-lora")
+    parser.add_argument(
+        "--train_file", default="./icd_data/mimiciv_icd10/train.parquet"
+    )
+    parser.add_argument("--val_file", default="./icd_data/mimiciv_icd10/val.parquet")
+    parser.add_argument(
+        "--output_dir", default="./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora"
+    )
     parser.add_argument("--text_col", default=None)
     parser.add_argument("--label_col", default=None)
 
@@ -221,29 +225,22 @@ def main():
     training_args = SFTConfig(
         output_dir=args.output_dir,
         max_length=args.max_seq_length,
-
         num_train_epochs=args.num_train_epochs,
         learning_rate=args.learning_rate,
-
         per_device_train_batch_size=args.per_device_train_batch_size,
         per_device_eval_batch_size=args.per_device_eval_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
-
         eval_strategy="steps",
         eval_steps=args.eval_steps,
         save_strategy="steps",
         save_steps=args.save_steps,
         save_total_limit=2,
-
         logging_steps=args.logging_steps,
         bf16=True,
-
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
-
         packing=False,
         report_to="none",
-
         # write checkpoints regularly to a mounted persistent volume.
         save_safetensors=True,
     )
