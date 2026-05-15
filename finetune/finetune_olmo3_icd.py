@@ -90,26 +90,23 @@ def normalise_codes(value: Any) -> List[str]:
     parts = re.split(r"[,;\s]+", s)
     return sorted({p.strip() for p in parts if p.strip()})
 
-def make_messages(note, codes):
-    if codes is None:
-        codes = []
-    elif hasattr(codes, "tolist"):
-        codes = codes.tolist()
-    elif not isinstance(codes, (list, tuple, set)):
-        codes = [str(codes)]
+def make_messages(example: dict, text_col: str, label_col: str) -> dict:
+    note = str(example[text_col]).strip()
+    codes = normalise_codes(example[label_col])
 
     target = json.dumps(
-        {"icd_codes": sorted([str(c) for c in codes if c is not None])},
+        {"icd_codes": codes},
         ensure_ascii=False,
         separators=(",", ":"),
     )
 
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": USER_TEMPLATE.format(note=note)},
-        {"role": "assistant", "content": target},
-    ]
-
+    return {
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": USER_TEMPLATE.format(note=note)},
+            {"role": "assistant", "content": target},
+        ]
+    }
 
 def load_and_prepare(path: str, text_col: str | None, label_col: str | None) -> Dataset:
     df = pd.read_parquet(path)
