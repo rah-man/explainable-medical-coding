@@ -25,10 +25,16 @@ Discharge summary:
 {note}
 """
 
-
 def make_messages(note, codes):
+    if codes is None:
+        codes = []
+    elif hasattr(codes, "tolist"):
+        codes = codes.tolist()
+    elif not isinstance(codes, (list, tuple, set)):
+        codes = [str(codes)]
+
     target = json.dumps(
-        {"icd_codes": list(codes)},
+        {"icd_codes": sorted([str(c) for c in codes if c is not None])},
         ensure_ascii=False,
         separators=(",", ":"),
     )
@@ -38,7 +44,6 @@ def make_messages(note, codes):
         {"role": "user", "content": USER_TEMPLATE.format(note=note)},
         {"role": "assistant", "content": target},
     ]
-
 
 def summarise(lengths, name):
     arr = np.array(lengths)
