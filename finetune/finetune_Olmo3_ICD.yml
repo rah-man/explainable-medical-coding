@@ -1,0 +1,97 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: frahman-olmo3--icd-
+  labels:
+    kueue.x-k8s.io/queue-name: eidf186ns-user-queue
+spec:
+  completions: 1
+  template:
+    metadata:
+      name: frahman-olmo3-ft-pod
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: frahman-olmo3-ft
+          image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+          env:
+            - name: HUGGINGFACE_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token
+                  key: HUGGINGFACE_HUB_TOKEN
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token
+                  key: HUGGINGFACE_HUB_TOKEN
+            - name: TOKENIZERS_PARALLELISM
+              value: "false"
+            - name: HF_HOME
+              value: /mnt/app/.cache/huggingface
+            - name: TRANSFORMERS_CACHE
+              value: /mnt/app/.cache/huggingface/transformers
+            - name: HF_DATASETS_CACHE
+              value: /mnt/app/.cache/huggingface/datasets
+
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              cd /mnt/app
+
+              echo "Installing Python requirements at pod startup..."
+              python -m pip install --upgrade pip
+              python -m pip install \
+                "transformers>=4.57.0" \
+                datasets \
+                accelerate \
+                peft \
+                trl \
+                pandas \
+                pyarrow \
+                bitsandbytes \
+                safetensors
+
+              echo "Starting Olmo 3 7B Instruct LoRA fine-tuning for ICD coding..."
+
+              python train_olmo3_icd_sft.py \
+                --train_file data/processed/mimiciv_icd10/train.parquet \
+                --val_file data/processed/mimiciv_icd10/val.parquet \
+                --output_dir /mnt/app/outputs/olmo3-7b-instruct-mimiciv-icd10-lora-r8 \
+                --text_col text \
+                --label_col diagnosis_codes \
+                --max_seq_length 8192 \
+                --per_device_train_batch_size 1 \
+                --per_device_eval_batch_size 1 \
+                --gradient_accumulation_steps 8 \
+                --num_train_epochs 1 \
+                --learning_rate 2e-4 \
+                --eval_steps 500 \
+                --save_steps 500 \
+                --logging_steps 20
+
+              echo "Fine-tuning finished."
+
+          volumeMounts:
+            - mountPath: /mnt/app
+              name: volume
+
+          resources:
+            requests:
+              cpu: 4
+              memory: 32Gi
+            limits:
+              cpu: 8
+              memory: 64Gi
+              nvidia.com/gpu: 1
+
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-80GB
+
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: pytorch-pvc
