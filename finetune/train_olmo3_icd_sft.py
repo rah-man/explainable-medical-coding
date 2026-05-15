@@ -202,7 +202,7 @@ def main():
 
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
-        torch_dtype=torch_dtype,
+        dtype=torch_dtype,
         quantization_config=quantization_config,
         device_map="auto",
         trust_remote_code=True,
@@ -242,7 +242,7 @@ def main():
         packing=False,
         report_to="none",
         # write checkpoints regularly to a mounted persistent volume.
-        save_safetensors=True,
+        # save_safetensors=True,
     )
 
     trainer = SFTTrainer(
