@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: olmo3-tokens-
+  labels:
+    kueue.x-k8s.io/queue-name: eidf186ns-user-queue
+spec:
+  completions: 1
+  template:
+    metadata:
+      name: olmo3-tokens-pod
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: olmo3-tokens
+          image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+          env:
+            - name: HUGGINGFACE_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token
+                  key: HUGGINGFACE_HUB_TOKEN
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token
+                  key: HUGGINGFACE_HUB_TOKEN
+            - name: TOKENIZERS_PARALLELISM
+              value: "false"
+            - name: HF_HOME
+              value: /mnt/app/.cache/huggingface
+            - name: TRANSFORMERS_CACHE
+              value: /mnt/app/.cache/huggingface/transformers
+            - name: HF_DATASETS_CACHE
+              value: /mnt/app/.cache/huggingface/datasets
+
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              cd /mnt/app
+
+              echo "Installing Python requirements at pod startup..."
+              python -m pip install --upgrade pip
+              python -m pip install \
+                "transformers>=4.57.0" \
+                datasets \
+                accelerate \
+                peft \
+                trl \
+                pandas \
+                pyarrow \
+                bitsandbytes \
+                safetensors
+
+              echo "Starting Tokens Counting on Olmo 3 7B Instruct..."
+
+              python count_olmo_tokens.py \
+                --train_file ./icd_data/mimiciv_icd10/train.parquet \
+                --val_file ./icd_data/mimiciv_icd10/val.parquet \
+                --test_file ./icd_data/mimiciv_icd10/test.parquet \
+                --text_col text \
+                --label_col diagnosis_codes \
+                --batch_size 128 \
+                --output_csv ./outputs/olmo3_icd10_token_lengths.csv
+
+              echo "Counting finished."
+
+          volumeMounts:
+            - mountPath: /mnt/app
+              name: volume
+
+          resources:
+            requests:
+              cpu: 4
+              memory: 32Gi
+            limits:
+              cpu: 8
+              memory: 64Gi
+              nvidia.com/gpu: 1
+
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-80GB
+
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: pytorch-pvc
