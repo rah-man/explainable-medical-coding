@@ -216,10 +216,15 @@ def main():
         lora_alpha=32,
         lora_dropout=0.05,
         bias="none",
-        # target_modules=[
-        #     "q_proj", "k_proj", "v_proj", "o_proj",
-        #     "gate_proj", "up_proj", "down_proj",
-        # ],
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ],
     )
 
     training_args = SFTConfig(
