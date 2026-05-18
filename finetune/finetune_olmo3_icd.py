@@ -224,6 +224,7 @@ def main():
     parser.add_argument("--max_train_samples", type=int, default=None)
     parser.add_argument("--max_val_samples", type=int, default=None)
     parser.add_argument("--max_completion_tokens", type=int, default=512)
+    parser.add_argument("--rank", type=int, default=4)
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -287,8 +288,8 @@ def main():
 
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
-        r=8,
-        lora_alpha=32,
+        r=args.rank,
+        lora_alpha=2*args.rank,
         lora_dropout=0.05,
         bias="none",
         target_modules=[
