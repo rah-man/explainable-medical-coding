@@ -64,10 +64,10 @@ spec:
                 --text_col text \
                 --label_col diagnosis_codes \
                 --max_seq_length 2048 \
-                --num_train_epochs 0.01 \
+                --num_train_epochs 0.1 \
                 --eval_strategy no \
                 --save_steps 100000 \
-                --max_train_samples 1000 \
+                --max_train_samples 10000 \
                 --max_val_samples 20 \
                 --use_4bit
 
