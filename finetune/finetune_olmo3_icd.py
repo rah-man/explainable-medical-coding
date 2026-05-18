@@ -75,12 +75,53 @@ def normalise_codes(value: Any) -> List[str]:
     parts = re.split(r"[,;\s]+", s)
     return sorted({p.strip() for p in parts if p.strip()})
 
+def truncate_note_for_budget(
+    tokenizer,
+    note: str,
+    max_seq_length: int,
+    max_completion_tokens: int,
+) -> str:
+    # Build prompt with an empty note to estimate fixed overhead.
+    empty_messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": USER_TEMPLATE.format(note="")},
+    ]
+
+    empty_prompt = tokenizer.apply_chat_template(
+        empty_messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    empty_prompt_ids = tokenizer(
+        empty_prompt,
+        add_special_tokens=False,
+    )["input_ids"]
+
+    note_budget = max_seq_length - max_completion_tokens - len(empty_prompt_ids)
+
+    if note_budget <= 0:
+        raise ValueError(
+            f"max_seq_length={max_seq_length} is too small after reserving "
+            f"{max_completion_tokens} completion tokens."
+        )
+
+    note_ids = tokenizer(
+        str(note),
+        add_special_tokens=False,
+        truncation=True,
+        max_length=note_budget,
+    )["input_ids"]
+
+    return tokenizer.decode(note_ids, skip_special_tokens=False)
 
 def make_prompt_completion(
     example: dict,
     text_col: str,
     label_col: str,
     tokenizer,
+    max_seq_length=8192,
+    max_completion_tokens=512,
 ) -> dict:
     """
     Create a prompt/completion example.
@@ -95,6 +136,14 @@ def make_prompt_completion(
     completion only. This avoids training the model to predict the long note.
     """
     note = str(example[text_col]).strip()
+
+    note = truncate_note_for_budget(
+        tokenizer=tokenizer,
+        note=str(example[text_col]).strip(),
+        max_seq_length=max_seq_length,
+        max_completion_tokens=max_completion_tokens,
+    )
+
     codes = normalise_codes(example[label_col])
 
     target = json.dumps(
@@ -210,7 +259,8 @@ def main():
     parser.add_argument("--logging_steps", type=int, default=20)
     parser.add_argument("--use_4bit", action="store_true")  # should we use QLoRA?
     parser.add_argument("--max_train_samples", type=int, default=None)
-    parser.add_argument("--max_val_samples", type=int, default=None)    
+    parser.add_argument("--max_val_samples", type=int, default=None)
+    parser.add_argument("--max_completion_tokens", type=int, default=512)
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
