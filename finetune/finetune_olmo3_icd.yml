@@ -60,16 +60,16 @@ spec:
               python finetune_olmo3_icd.py \
                 --train_file ./icd_data/mimiciv_icd10/train.parquet \
                 --val_file ./icd_data/mimiciv_icd10/val.parquet \
-                --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r8-3 \
+                --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-completion-only-bf16-1 \
                 --text_col text \
                 --label_col diagnosis_codes \
                 --max_seq_length 8192 \
+                --num_train_epochs 1 \
+                --learning_rate 2e-4 \
                 --per_device_train_batch_size 1 \
                 --per_device_eval_batch_size 1 \
                 --gradient_accumulation_steps 8 \
-                --num_train_epochs 1 \
-                --learning_rate 2e-4 \
-                --eval_steps 500 \
+                --eval_strategy epoch \
                 --save_steps 500 \
                 --logging_steps 20
 
