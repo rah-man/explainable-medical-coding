@@ -60,7 +60,7 @@ spec:
               python finetune_olmo3_icd.py \
                 --train_file ./icd_data/mimiciv_icd10/train.parquet \
                 --val_file ./icd_data/mimiciv_icd10/val.parquet \
-                --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r4-bf16-1 \
+                --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
                 --text_col text \
                 --label_col diagnosis_codes \
                 --max_seq_length 8192 \
@@ -72,7 +72,7 @@ spec:
                 --eval_strategy epoch \
                 --save_steps 500 \
                 --max_completion_tokens 512 \
-                --rank 4
+                --rank 16 \
                 --logging_steps 20
 
               echo "Fine-tuning finished."
