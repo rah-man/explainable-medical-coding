@@ -115,13 +115,22 @@ def truncate_note_for_budget(
 
     return tokenizer.decode(note_ids, skip_special_tokens=False)
 
+def truncate_note(tokenizer, note: str, note_budget: int) -> str:
+    note_ids = tokenizer(
+        str(note),
+        add_special_tokens=False,
+        truncation=True,
+        max_length=note_budget,
+    )["input_ids"]
+
+    return tokenizer.decode(note_ids, skip_special_tokens=False)
+
 def make_prompt_completion(
     example: dict,
     text_col: str,
     label_col: str,
     tokenizer,
-    max_seq_length=8192,
-    max_completion_tokens=512,
+    note_budget,
 ) -> dict:
     """
     Create a prompt/completion example.
@@ -135,12 +144,7 @@ def make_prompt_completion(
     With SFTConfig(completion_only_loss=True), TRL computes loss on the
     completion only. This avoids training the model to predict the long note.
     """
-    note = truncate_note_for_budget(
-        tokenizer=tokenizer,
-        note=str(example[text_col]).strip(),
-        max_seq_length=max_seq_length,
-        max_completion_tokens=max_completion_tokens,
-    )
+    note = truncate_note(tokenizer=tokenizer, note=str(example[text_col]).strip(), note_budget=note_budget)
 
     codes = normalise_codes(example[label_col])
 
@@ -214,12 +218,12 @@ def load_dataframe_and_columns(
     df = df.dropna(subset=[text_col, label_col]).reset_index(drop=True)
     return df, text_col, label_col
 
-
 def load_and_prepare(
     path: str,
     text_col: str | None,
     label_col: str | None,
     tokenizer,
+    note_budget,
 ) -> Dataset:
     df, text_col, label_col = load_dataframe_and_columns(path, text_col, label_col)
 
@@ -230,6 +234,7 @@ def load_and_prepare(
             text_col=text_col,
             label_col=label_col,
             tokenizer=tokenizer,
+            note_budget=note_budget,
         ),
         remove_columns=ds.column_names,
     )
@@ -268,12 +273,30 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    # count note budget once
+    empty_messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": USER_TEMPLATE.format(note="")},
+    ]
+
+    empty_prompt = tokenizer.apply_chat_template(
+        empty_messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    empty_prompt_len = len(
+        tokenizer(empty_prompt, add_special_tokens=False)["input_ids"]
+    )
+
+    note_budget = args.max_seq_length - args.max_completion_tokens - empty_prompt_len         
+
     # Dataset creation now happens after loading the tokenizer, because we use
     # tokenizer.apply_chat_template(...) to construct the OLMo-formatted prompt.
-    train_ds = load_and_prepare(args.train_file, args.text_col, args.label_col, tokenizer)
+    train_ds = load_and_prepare(args.train_file, args.text_col, args.label_col, tokenizer, note_budget)
     val_ds = None
     if args.eval_strategy != "no":
-        val_ds = load_and_prepare(args.val_file, args.text_col, args.label_col, tokenizer)
+        val_ds = load_and_prepare(args.val_file, args.text_col, args.label_col, tokenizer, note_budget)
 
     if args.max_train_samples is not None:
         train_ds = train_ds.select(range(min(args.max_train_samples, len(train_ds))))
