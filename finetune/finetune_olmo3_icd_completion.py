@@ -209,6 +209,8 @@ def main():
     parser.add_argument("--save_steps", type=int, default=500)
     parser.add_argument("--logging_steps", type=int, default=20)
     parser.add_argument("--use_4bit", action="store_true")  # should we use QLoRA?
+    parser.add_argument("--max_train_samples", type=int, default=None)
+    parser.add_argument("--max_val_samples", type=int, default=None)    
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -224,6 +226,12 @@ def main():
     val_ds = None
     if args.eval_strategy != "no":
         val_ds = load_and_prepare(args.val_file, args.text_col, args.label_col, tokenizer)
+
+    if args.max_train_samples is not None:
+        train_ds = train_ds.select(range(min(args.max_train_samples, len(train_ds))))
+
+    if args.max_val_samples is not None and val_ds is not None:
+        val_ds = val_ds.select(range(min(args.max_val_samples, len(val_ds))))        
 
     quantization_config = None
     torch_dtype = torch.bfloat16
