@@ -65,7 +65,9 @@ spec:
                 --num_train_epochs 0.001 \
                 --eval_steps 100000 \
                 --save_steps 100000 \
-                --use_4bit
+                --text_col text \
+                --label_col diagnosis_codes \                
+                --use_4bit              
 
               echo "Fine-tuning finished."
 
