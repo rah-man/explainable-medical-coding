@@ -66,8 +66,8 @@ spec:
                 --eval_steps 100000 \
                 --save_steps 100000 \
                 --text_col text \
-                --label_col diagnosis_codes \                
-                --use_4bit              
+                --label_col diagnosis_codes \
+                --use_4bit
 
               echo "Fine-tuning finished."
 
