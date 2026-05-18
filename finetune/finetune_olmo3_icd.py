@@ -135,8 +135,6 @@ def make_prompt_completion(
     With SFTConfig(completion_only_loss=True), TRL computes loss on the
     completion only. This avoids training the model to predict the long note.
     """
-    note = str(example[text_col]).strip()
-
     note = truncate_note_for_budget(
         tokenizer=tokenizer,
         note=str(example[text_col]).strip(),
