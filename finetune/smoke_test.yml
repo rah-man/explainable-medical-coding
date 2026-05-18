@@ -63,7 +63,7 @@ spec:
                 --output_dir ./icd_models/temp \
                 --text_col text \
                 --label_col diagnosis_codes \
-                --max_seq_length 2048 \
+                --max_seq_length 8192 \
                 --num_train_epochs 0.1 \
                 --eval_strategy no \
                 --save_steps 100000 \
