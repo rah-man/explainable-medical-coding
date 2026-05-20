@@ -1,19 +1,19 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: olmo3-vllm-predict-icd-
+  generateName: olmo3-vllm-pred-
   labels:
     kueue.x-k8s.io/queue-name: eidf186ns-user-queue
 spec:
   completions: 1
   template:
     metadata:
-      name: olmo3-vllm-predict-pod
+      name: olmo3-vllm-pred
     spec:
       restartPolicy: Never
 
       containers:
-        - name: olmo3-vllm-predict
+        - name: olmo3-vllm-pred
           image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 
           env:
@@ -48,31 +48,43 @@ spec:
 
               echo "Installing Python requirements at pod startup..."
               python -m pip install --upgrade pip
-              python -m pip install \
-                vllm \
+              python -m pip install -U uv
+
+              uv pip install --system \
                 "transformers>=4.57.0" \
                 pandas \
                 pyarrow \
                 tqdm \
                 safetensors
 
-              echo "Starting Olmo 3 7B Instruct + LoRA vLLM prediction for ICD coding..."
+              uv pip install --system --torch-backend=cu128 vllm
 
-              python -u predict_vllm_olmo3_icd.py \
-                --test_file ./icd_data/mimiciv_icd10/val.parquet \
-                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
-                --output_file ./outputs/val_predictions_vllm_r16.jsonl \
-                --metrics_file ./outputs/val_metrics_vllm_r16.json \
-                --text_col text \
-                --label_col diagnosis_codes \
-                --max_model_len 8192 \
-                --max_tokens 256 \
-                --batch_size 8 \
-                --gpu_memory_utilization 0.90 \
-                --tensor_parallel_size 1
+              python - <<'PY'
+              import torch
+              import vllm
+              print("torch:", torch.__version__)
+              print("torch cuda:", torch.version.cuda)
+              print("cuda available:", torch.cuda.is_available())
+              print("vllm:", vllm.__version__)
+              PY              
 
-              echo "Prediction finished. Output written to:"
-              ls -lh ./outputs/val_predictions_vllm_r16.jsonl ./outputs/val_metrics_vllm_r16.json
+              # echo "Starting Olmo 3 7B Instruct + LoRA vLLM prediction for ICD coding..."
+
+              # python -u predict_vllm_olmo3_icd.py \
+              #   --test_file ./icd_data/mimiciv_icd10/val.parquet \
+              #   --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
+              #   --output_file ./outputs/val_predictions_vllm_r16.jsonl \
+              #   --metrics_file ./outputs/val_metrics_vllm_r16.json \
+              #   --text_col text \
+              #   --label_col diagnosis_codes \
+              #   --max_model_len 8192 \
+              #   --max_tokens 256 \
+              #   --batch_size 8 \
+              #   --gpu_memory_utilization 0.90 \
+              #   --tensor_parallel_size 1
+
+              # echo "Prediction finished. Output written to:"
+              # ls -lh ./outputs/val_predictions_vllm_r16.jsonl ./outputs/val_metrics_vllm_r16.json
 
           volumeMounts:
             - mountPath: /mnt/app
