@@ -47,12 +47,19 @@ spec:
               set -euo pipefail
               cd /mnt/app
 
-              echo "Installing small Python requirements..."
-              python -m pip install --upgrade pip
-              python -m pip install pandas pyarrow tqdm transformers safetensors
+              echo "Checking available Python executables..."
+              command -v python || true
+              command -v python3 || true
+              command -v pip || true
+              command -v pip3 || true
+              ls -l /usr/bin/python* /usr/local/bin/python* 2>/dev/null || true              
 
-              echo "Checking runtime versions..."
-              python -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'              
+              # echo "Installing small Python requirements..."
+              # python -m pip install --upgrade pip
+              # python -m pip install pandas pyarrow tqdm transformers safetensors
+
+              # echo "Checking runtime versions..."
+              # python -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'              
 
               # echo "Starting vLLM ICD prediction..."
 
