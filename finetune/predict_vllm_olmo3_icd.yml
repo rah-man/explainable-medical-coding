@@ -47,23 +47,16 @@ spec:
               set -euo pipefail
               cd /mnt/app
 
-              echo "Checking available Python executables..."
-              command -v python || true
-              command -v python3 || true
-              command -v pip || true
-              command -v pip3 || true
-              ls -l /usr/bin/python* /usr/local/bin/python* 2>/dev/null || true              
+              echo "Checking runtime versions..."
+              python3 -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'              
 
-              # echo "Installing small Python requirements..."
-              # python -m pip install --upgrade pip
-              # python -m pip install pandas pyarrow tqdm transformers safetensors
-
-              # echo "Checking runtime versions..."
-              # python -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'              
+              echo "Installing small Python requirements..."
+              python3 -m pip install --upgrade pip
+              python3 -m pip install pandas pyarrow tqdm transformers safetensors              
 
               # echo "Starting vLLM ICD prediction..."
 
-              # python -u predict_vllm_olmo3_icd.py \
+              # python3 -u predict_vllm_olmo3_icd.py \
               #   --test_file ./icd_data/mimiciv_icd10/val.parquet \
               #   --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
               #   --output_file ./outputs/val_predictions_vllm_r16.jsonl \
