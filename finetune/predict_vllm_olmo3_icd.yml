@@ -57,7 +57,7 @@ spec:
                 tqdm \
                 safetensors
 
-              uv pip install --system --torch-backend=cu128 vllm
+              uv pip install --system --torch-backend=cu128 "vllm==0.20.1"
 
               python - <<'PY'
               import torch
