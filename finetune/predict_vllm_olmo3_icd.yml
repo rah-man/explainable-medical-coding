@@ -1,19 +1,19 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: olmo3-icd-predict-
+  generateName: olmo3-icd-pred-
   labels:
     kueue.x-k8s.io/queue-name: eidf186ns-user-queue
 spec:
   completions: 1
   template:
     metadata:
-      name: olmo3-icd-predict
+      name: olmo3-icd-pred
     spec:
       restartPolicy: Never
 
       containers:
-        - name: olmo3-predict
+        - name: olmo3-pred
           image: vllm/vllm-openai:v0.21.0
 
           env:
