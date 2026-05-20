@@ -1,20 +1,20 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: olmo3-vllm-pred-
+  generateName: olmo3-icd-predict-
   labels:
     kueue.x-k8s.io/queue-name: eidf186ns-user-queue
 spec:
   completions: 1
   template:
     metadata:
-      name: olmo3-vllm-pred
+      name: olmo3-icd-predict
     spec:
       restartPolicy: Never
 
       containers:
-        - name: olmo3-vllm-pred
-          image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+        - name: olmo3-predict
+          image: vllm/vllm-openai:v0.21.0
 
           env:
             - name: HUGGINGFACE_HUB_TOKEN
@@ -27,16 +27,17 @@ spec:
                 secretKeyRef:
                   name: hf-token
                   key: HUGGINGFACE_HUB_TOKEN
+
             - name: TOKENIZERS_PARALLELISM
               value: "false"
+
             - name: HF_HOME
               value: /mnt/app/.cache/huggingface
             - name: TRANSFORMERS_CACHE
               value: /mnt/app/.cache/huggingface/transformers
             - name: HF_DATASETS_CACHE
               value: /mnt/app/.cache/huggingface/datasets
-            - name: VLLM_WORKER_MULTIPROC_METHOD
-              value: spawn
+
             - name: PYTHONUNBUFFERED
               value: "1"
 
@@ -46,45 +47,27 @@ spec:
               set -euo pipefail
               cd /mnt/app
 
-              echo "Installing Python requirements at pod startup..."
+              echo "Checking runtime versions..."
+              python -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'
+
+              echo "Installing small Python requirements..."
               python -m pip install --upgrade pip
-              python -m pip install -U uv
+              python -m pip install pandas pyarrow tqdm transformers safetensors
 
-              uv pip install --system \
-                "transformers>=4.57.0" \
-                pandas \
-                pyarrow \
-                tqdm \
-                safetensors
+              echo "Starting vLLM ICD prediction..."
 
-              uv pip install --system --torch-backend=cu128 "vllm==0.20.1"
+              python -u predict_vllm_olmo3_icd.py \
+                --test_file ./icd_data/mimiciv_icd10/val.parquet \
+                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
+                --output_file ./outputs/val_predictions_vllm_r16.jsonl \
+                --metrics_file ./outputs/val_metrics_vllm_r16.json \
+                --text_col text \
+                --label_col diagnosis_codes \
+                --max_model_len 8192 \
+                --max_tokens 256 \
+                --batch_size 32
 
-              python - <<'PY'
-              import torch
-              import vllm
-              print("torch:", torch.__version__)
-              print("torch cuda:", torch.version.cuda)
-              print("cuda available:", torch.cuda.is_available())
-              print("vllm:", vllm.__version__)
-              PY              
-
-              # echo "Starting Olmo 3 7B Instruct + LoRA vLLM prediction for ICD coding..."
-
-              # python -u predict_vllm_olmo3_icd.py \
-              #   --test_file ./icd_data/mimiciv_icd10/val.parquet \
-              #   --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
-              #   --output_file ./outputs/val_predictions_vllm_r16.jsonl \
-              #   --metrics_file ./outputs/val_metrics_vllm_r16.json \
-              #   --text_col text \
-              #   --label_col diagnosis_codes \
-              #   --max_model_len 8192 \
-              #   --max_tokens 256 \
-              #   --batch_size 8 \
-              #   --gpu_memory_utilization 0.90 \
-              #   --tensor_parallel_size 1
-
-              # echo "Prediction finished. Output written to:"
-              # ls -lh ./outputs/val_predictions_vllm_r16.jsonl ./outputs/val_metrics_vllm_r16.json
+              echo "Prediction finished."
 
           volumeMounts:
             - mountPath: /mnt/app
@@ -94,11 +77,11 @@ spec:
 
           resources:
             requests:
-              cpu: 4
-              memory: 32Gi
-            limits:
               cpu: 8
               memory: 64Gi
+            limits:
+              cpu: 16
+              memory: 128Gi
               nvidia.com/gpu: 1
 
       nodeSelector:
@@ -108,6 +91,7 @@ spec:
         - name: volume
           persistentVolumeClaim:
             claimName: pytorch-pvc
+
         - name: dshm
           emptyDir:
             medium: Memory
