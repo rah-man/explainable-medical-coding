@@ -57,10 +57,10 @@ spec:
               echo "Starting vLLM ICD prediction..."
 
               python3 -u predict_vllm_olmo3_icd.py \
-                --test_file ./icd_data/mimiciv_icd10/val.parquet \
-                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r4-bf16-2 \
-                --output_file ./outputs/val_predictions_vllm_r4_2.jsonl \
-                --metrics_file ./outputs/val_metrics_vllm_r4_2.json \
+                --test_file ./icd_data/mimiciv_icd10/test.parquet \
+                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
+                --output_file ./outputs/test_predictions_vllm_r16.jsonl \
+                --metrics_file ./outputs/test_metrics_vllm_r16.json \
                 --text_col text \
                 --label_col diagnosis_codes \
                 --max_model_len 8192 \
