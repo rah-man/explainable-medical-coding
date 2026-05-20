@@ -37,6 +37,8 @@ spec:
               value: /mnt/app/.cache/huggingface/datasets
             - name: VLLM_WORKER_MULTIPROC_METHOD
               value: spawn
+            - name: PYTHONUNBUFFERED
+              value: "1"
 
           command: ["/bin/bash", "-lc"]
           args:
@@ -56,23 +58,27 @@ spec:
 
               echo "Starting Olmo 3 7B Instruct + LoRA vLLM prediction for ICD coding..."
 
-              python predict_vllm_olmo3_icd.py \
-                --test_file ./icd_data/mimiciv_icd10/test.parquet \
-                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r8 \
-                --output_file ./outputs/test_predictions_vllm.jsonl \
+              python -u predict_vllm_olmo3_icd.py \
+                --test_file ./icd_data/mimiciv_icd10/val.parquet \
+                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
+                --output_file ./outputs/val_predictions_vllm_r16.jsonl \
+                --metrics_file ./outputs/val_metrics_vllm_r16.json \
                 --text_col text \
                 --label_col diagnosis_codes \
-                --limit 20 \
                 --max_model_len 8192 \
                 --max_tokens 256 \
-                --batch_size 8
+                --batch_size 8 \
+                --gpu_memory_utilization 0.90 \
+                --tensor_parallel_size 1
 
               echo "Prediction finished. Output written to:"
-              ls -lh ./outputs/test_predictions_vllm.jsonl
+              ls -lh ./outputs/val_predictions_vllm_r16.jsonl ./outputs/val_metrics_vllm_r16.json
 
           volumeMounts:
             - mountPath: /mnt/app
               name: volume
+            - mountPath: /dev/shm
+              name: dshm
 
           resources:
             requests:
@@ -90,3 +96,7 @@ spec:
         - name: volume
           persistentVolumeClaim:
             claimName: pytorch-pvc
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi
