@@ -66,7 +66,7 @@ spec:
               python -u finetune_olmo3_icd.py \
                 --train_file ./icd_data/mimiciv_icd10/train.parquet \
                 --val_file ./icd_data/mimiciv_icd10/val.parquet \
-                --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
+                --output_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r4-bf16-2 \
                 --text_col text \
                 --label_col diagnosis_codes \
                 --max_seq_length 8192 \
