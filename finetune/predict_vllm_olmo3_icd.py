@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
+from vllm.sampling_params import StructuredOutputsParams
 from vllm.lora.request import LoRARequest
 
 
@@ -216,8 +217,8 @@ def main():
     sampling_params = SamplingParams(
         temperature=0.0,
         max_tokens=args.max_tokens,
-        structured_outputs={"json": JSON_SCHEMA},
-    )
+        structured_outputs=StructuredOutputsParams(json=JSON_SCHEMA),
+    )    
 
     lora_request = LoRARequest("olmo3_icd_lora", 1, args.adapter_dir)
 
