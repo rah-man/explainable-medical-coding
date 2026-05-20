@@ -48,19 +48,19 @@ spec:
               cd /mnt/app
 
               # echo "Checking runtime versions..."
-              # python3 -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'              
+              # python3 -c 'import torch, vllm; print("torch:", torch.__version__); print("torch cuda:", torch.version.cuda); print("cuda available:", torch.cuda.is_available()); print("vllm:", vllm.__version__)'
 
               echo "Installing small Python requirements..."
               python3 -m pip install --upgrade pip
-              python3 -m pip install pandas pyarrow tqdm safetensors              
+              python3 -m pip install pandas pyarrow tqdm safetensors
 
               echo "Starting vLLM ICD prediction..."
 
               python3 -u predict_vllm_olmo3_icd.py \
                 --test_file ./icd_data/mimiciv_icd10/val.parquet \
-                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r16-bf16-1 \
-                --output_file ./outputs/val_predictions_vllm_r16.jsonl \
-                --metrics_file ./outputs/val_metrics_vllm_r16.json \
+                --adapter_dir ./icd_models/olmo3-7b-instruct-mimiciv-icd10-lora-r4-bf16-2 \
+                --output_file ./outputs/val_predictions_vllm_r4_2.jsonl \
+                --metrics_file ./outputs/val_metrics_vllm_r4_2.json \
                 --text_col text \
                 --label_col diagnosis_codes \
                 --max_model_len 8192 \
